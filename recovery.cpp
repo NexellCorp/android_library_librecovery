@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <errno.h>
 #include <string.h>
 #include <fcntl.h>
@@ -81,13 +82,13 @@ static int UpdateKernel(char *imgBase, size_t imgSize, char *type)
 	return -ENOTSUP;
 }
 
-static int UpdateDTB(char *imgBase, size_t imgSize, char *type)
+static int UpdateDTB(char *imgBase, size_t imgSize, char *address)
 {
-	if (!strncmp(type, "mmc", 3))
-		return UpdateMMC(DEVICE, 0x2A00000, imgBase, imgSize);
 
-	fprintf(stderr, "%s: Currently only support MMC type\n", __func__);
-	return -ENOTSUP;
+	int offset = (int) strtol(address, NULL, 0);
+
+	return UpdateMMC(DEVICE, offset, imgBase, imgSize);
+
 }
 
 static int UpdateRoot(char *imgBase, size_t imgSize, char *type)
@@ -133,26 +134,26 @@ static Value *WriteDTBFn(const char *name, State *state, int /* argc */,
 {
 	int ret;
 	Value *img;
-	Value *type;
+	Value *offset;
 
 	fprintf(stdout, "name %s\n", __func__, name);
-	ret = ReadValueArgs(state, argv, 2, &img, &type);
+	ret = ReadValueArgs(state, argv, 2, &img, &offset);
 	if (ret < 0)
 		fprintf(stderr, "Failed to ReadValueArgs, ret %d\n", ret);
 
-	if (ret == 0 && (img->type != VAL_BLOB || type->type != VAL_STRING)) {
+	if (ret == 0 && (img->type != VAL_BLOB || offset->type != VAL_STRING )) {
 		FreeValue(img);
-		FreeValue(type);
+		FreeValue(offset);
 		ret = -EINVAL;
 	}
 
 	if (ret == 0) {
-		ret = UpdateDTB(img->data, img->size, type->data);
+		ret = UpdateDTB(img->data, img->size, offset->data);
 		fprintf(stdout, "UpdateDTB ret %d\n", ret);
 	}
 
 	FreeValue(img);
-	FreeValue(type);
+	FreeValue(offset);
 
 	return StringValue(strdup(ret ? "": "t"));
 }
