@@ -73,13 +73,12 @@ static int UpdateBootloader(char *imgBase, size_t imgSize, char *type)
 	return -ENOTSUP;
 }
 
-static int UpdateKernel(char *imgBase, size_t imgSize, char *type)
+static int UpdateKernel(char *imgBase, size_t imgSize, char *address)
 {
-	if (!strncmp(type, "mmc", 3))
-		return UpdateMMC(DEVICE, 0xA00000, imgBase, imgSize);
+	int offset = (int) strtol(address, NULL, 0);
 
-	fprintf(stderr, "%s: Currently only support MMC type\n", __func__);
-	return -ENOTSUP;
+	return UpdateMMC(DEVICE, 0xA00000, imgBase, imgSize);
+
 }
 
 static int UpdateDTB(char *imgBase, size_t imgSize, char *address)
@@ -91,14 +90,12 @@ static int UpdateDTB(char *imgBase, size_t imgSize, char *address)
 
 }
 
-static int UpdateRoot(char *imgBase, size_t imgSize, char *type)
+static int UpdateRoot(char *imgBase, size_t imgSize, char *part)
 {
-	int part = 1;
-	if (!strncmp(type, "mmc", 3))
-		return UpdateEXT4(DEVICE, part, imgBase, imgSize);
+	int partnum = (int) strtol(part, NULL, 0);
 
-	fprintf(stderr, "%s: Currently only support MMC type\n", __func__);
-	return -ENOTSUP;
+	return UpdateEXT4(DEVICE, partnum, imgBase, imgSize);
+
 }
 static Value *WriteKernelFn(const char *name, State *state, int /* argc */,
 								Expr *argv[])
